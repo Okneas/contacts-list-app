@@ -7,9 +7,9 @@ function App() {
   return (
     <Routes>
       <Route index element={<ContactsTablePage />} />
-      <Route path="/contact/:id" element={<ContactCardPage />}>
-        <Route path="/contact/:id/edit" element={<ContactFormPage />} />
-      </Route>
+      <Route path="contact/new" element={<ContactFormPage />} />
+      <Route path="contact/:id" element={<ContactCardPage />} />
+      <Route path="contact/:id/edit" element={<ContactFormPage />} />
     </Routes>
   );
 }

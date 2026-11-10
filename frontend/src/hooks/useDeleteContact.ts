@@ -5,7 +5,7 @@ export function useDeleteContact() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: number) => deleteContact(id),
+    mutationFn: (id: number) => deleteContact(id).then(() => undefined),
     onSuccess: (_data, deletedId) => {
       queryClient.removeQueries({ queryKey: ['contact', deletedId] })
       queryClient.invalidateQueries({ queryKey: ['contacts'] })
