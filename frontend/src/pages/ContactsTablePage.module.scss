@@ -1,0 +1,17 @@
+.paper_table_header {
+    width: 100%; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+}
+
+.search_wrapper {
+    display: flex; 
+    gap: .75rem;
+    width: 30%;
+    align-items: center;
+}
+
+.search_input_container {
+    flex: 1
+}

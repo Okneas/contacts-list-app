@@ -1,5 +1,6 @@
 import mysql, { Pool } from 'mysql2/promise';
 import { config } from './config';
+import { Connection } from 'mysql2';
 
 export const pool: Pool = mysql.createPool({
   host: config.db.host,
@@ -15,6 +16,13 @@ export const pool: Pool = mysql.createPool({
   dateStrings: true,
 });
 
+pool.pool.on('connection', (conn) => {
+  conn.query("SET time_zone = '+00:00'", (err) => {
+    if (err) {
+      console.error('[db] failed to set time_zone:', err);
+    }
+  });
+});
 
 export async function checkDbConnection(): Promise<void> {
   const conn = await pool.getConnection();
