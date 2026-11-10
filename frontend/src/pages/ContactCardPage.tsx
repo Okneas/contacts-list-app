@@ -20,19 +20,18 @@ const ContactCardPage = () => {
 
   const handleEdit = () => {
     if (!contact) return;
-    navigate(`/contacts/${contact.data.id}/edit`);
+    navigate(`/contact/${contact.id}/edit`);
   };
 
   const handleConfirmDelete = () => {
     if (!contact) return;
-    remove.mutate(contact.data.id, {
+    remove.mutate(contact.id, {
       onSuccess: () => {
         setIsDeleteOpen(false);
         navigate("/", { replace: true });
       },
     });
   };
-
   if (!isValidId) {
     return (
       <div className="page">
@@ -117,7 +116,7 @@ const ContactCardPage = () => {
           </button>
 
           <Card
-            contact={contact.data}
+            contact={contact}
             onEdit={handleEdit}
             onDelete={() => setIsDeleteOpen(true)}
             isDeleting={remove.isPending}

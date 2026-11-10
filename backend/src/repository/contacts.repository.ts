@@ -62,6 +62,11 @@ export async function findAll(
   const conditions: string[] = [];
   const params: Record<string, string | number> = {};
 
+  if (query.status) {
+    conditions.push("status = :status");
+    params.status = query.status;
+  }
+
   const trimmed = query.search.trim();
   if (trimmed.length > 0) {
     conditions.push(
@@ -71,15 +76,19 @@ export async function findAll(
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
-  const column = SORT_COLUMN[query.sortBy];
   const direction = query.sortDir === "asc" ? "ASC" : "DESC";
+
+  const orderBy =
+    query.sortBy === "status"
+      ? `FIELD(status, 'lead', 'active', 'inactive') ${direction}, id ${direction}`
+      : `${SORT_COLUMN[query.sortBy]} ${direction}, id ${direction}`;
 
   const countSql = `SELECT COUNT(*) AS total FROM contacts ${where}`;
   const listSql = `
     SELECT ${SELECT_COLUMNS}
     FROM contacts
     ${where}
-    ORDER BY ${column} ${direction}, id ${direction}
+    ORDER BY ${orderBy}
     LIMIT :limit OFFSET :offset
   `;
 

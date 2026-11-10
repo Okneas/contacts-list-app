@@ -38,6 +38,7 @@ export const listQuerySchema = z
     sortDir: z.enum(['asc', 'desc']).optional().default('desc'),
     page: z.coerce.number().int().min(1).optional().default(1),
     pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
+    status: z.enum(CONTACT_STATUSES).nullable().optional().default(null),
   })
   .transform((v) => ({
     search: v.search,
@@ -45,6 +46,7 @@ export const listQuerySchema = z
     sortDir: v.sortDir,
     page: v.page,
     pageSize: v.pageSize,
+    status: v.status,
   }));
 
 

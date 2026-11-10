@@ -31,6 +31,7 @@ export interface ContactListQuery {
   sortDir: SortDirection;
   page: number;
   pageSize: number;
+  status: ContactStatus | null;
 }
 
 export interface PageMeta {

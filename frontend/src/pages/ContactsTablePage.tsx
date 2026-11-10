@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
 import { useDebounce } from "@/hooks/useDebounce";
-import useContacts from "@/hooks/useContacts";
 import Table from "@/components/Table/Table";
 import Pagination from "@/components/Pagination/Pagination";
 import ConfirmDialog from "@/components/ConfirmDialog/ConfirmDialog";
-import type { Contact, ContactSortField, SortDirection } from "@/types";
+import type {
+  Contact,
+  ContactSortField,
+  ContactStatus,
+  SortDirection,
+} from "@/types";
 import styles from "./ContactsTablePage.module.scss";
+import { useContacts } from "@/hooks/useContacts";
 
 const PAGE_SIZE = 10;
 
@@ -15,6 +20,7 @@ const ContactsTablePage = () => {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<ContactSortField>("createdAt");
   const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [statusFilter, setStatusFilter] = useState<ContactStatus | null>(null);
   const [page, setPage] = useState(1);
 
   const debouncedSearch = useDebounce(search, 300);
@@ -25,6 +31,7 @@ const ContactsTablePage = () => {
     debouncedSearch,
     sortBy,
     sortDir,
+    statusFilter,
   );
   const remove = useDeleteContact();
 
@@ -33,7 +40,7 @@ const ContactsTablePage = () => {
 
   useEffect(() => {
     tableScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page, debouncedSearch, sortBy, sortDir]);
+  }, [page, debouncedSearch, sortBy, sortDir, statusFilter]);
 
   const totalPages = contacts?.meta.totalPages ?? 1;
 
@@ -69,6 +76,11 @@ const ContactsTablePage = () => {
     });
   };
 
+  const handleStatusFilterChange = (value: ContactStatus | null) => {
+    setStatusFilter(value);
+    setPage(1);
+  };
+
   return (
     <div className="page">
       <div className={`paper container ${styles.paper}`}>
@@ -100,6 +112,8 @@ const ContactsTablePage = () => {
             sortBy={sortBy}
             sortDir={sortDir}
             onSort={handleSort}
+            statusFilter={statusFilter}
+            onStatusFilterChange={handleStatusFilterChange}
           />
         </div>
 

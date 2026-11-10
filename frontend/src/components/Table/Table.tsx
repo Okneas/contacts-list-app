@@ -1,9 +1,15 @@
-import type { Contact, ContactSortField, SortDirection } from "@/types";
+import type {
+  Contact,
+  ContactSortField,
+  ContactStatus,
+  SortDirection,
+} from "@/types";
 import type { ComponentProps } from "react";
 import dayjs from "dayjs";
 import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Status from "./Status/Status";
+import StatusSelector from "../StatusSelector/StatusSelector";
 
 interface Props {
   data?: Contact[];
@@ -12,6 +18,8 @@ interface Props {
   sortBy: ContactSortField;
   sortDir: SortDirection;
   onSort: (field: ContactSortField) => void;
+  statusFilter: ContactStatus | null;
+  onStatusFilterChange: (value: ContactStatus | null) => void;
 }
 
 const Table = ({
@@ -21,6 +29,8 @@ const Table = ({
   sortBy,
   sortDir,
   onSort,
+  statusFilter,
+  onStatusFilterChange,
   ...props
 }: ComponentProps<"table"> & Props) => {
   const nav = useNavigate();
@@ -43,11 +53,20 @@ const Table = ({
   );
   return (
     <table {...props} className="table">
+      <colgroup>
+        <col style={{ width: "25%" }} />
+        <col style={{ width: "25%" }} />
+        <col style={{ width: "20%" }} />
+        <col />
+        <col style={{ width: "72px" }} />
+      </colgroup>
       <thead>
         <tr>
           <th>{sortButton("fullName", "ФИО")}</th>
           <th>{sortButton("company", "Компания")}</th>
-          <th>{sortButton("status", "Статус")}</th>
+          <th>
+            <StatusSelector value={statusFilter} onChange={onStatusFilterChange} />
+          </th>
           <th>{sortButton("createdAt", "Дата создания")}</th>
           <th style={{ width: "72px" }} />
         </tr>

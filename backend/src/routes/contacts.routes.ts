@@ -50,6 +50,12 @@ export const contactsRouter = Router();
  *           minimum: 1
  *           maximum: 100
  *           default: 20
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive, lead]
+ *           nullable: true
  *     responses:
  *       200:
  *         description: Страница списка контактов

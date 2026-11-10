@@ -72,3 +72,18 @@
   content: "▼";
   font-size: 0.7em;
 }
+
+.table--fixed {
+  table-layout: fixed;
+}
+
+.table--fixed tbody td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table--fixed .table__sort {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
