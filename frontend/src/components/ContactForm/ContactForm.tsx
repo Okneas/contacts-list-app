@@ -10,7 +10,7 @@ import {
 } from "@/lib/contactSchema";
 import { useCreateContact } from "@/hooks/useCreateContact";
 import { useUpdateContact } from "@/hooks/useUpdateContact";
-import StatusPill from "../StatusSelect/StatusPill";
+import StatusPill from "../StatusPill/StatusPill";
 import type { ContactInput } from "@/types";
 import styles from "./ContactForm.module.scss";
 
