@@ -1,17 +1,18 @@
-import { pool } from '../db';
+import { pool } from "../db";
 import {
   Contact,
   ContactInput,
   ContactListQuery,
   ContactSortField,
   ContactStatus,
-} from '../types';
+  PaginatedResult,
+} from "../types";
 
 const SORT_COLUMN: Record<ContactSortField, string> = {
-  fullName: 'full_name',
-  company: 'company',
-  status: 'status',
-  createdAt: 'created_at',
+  fullName: "full_name",
+  company: "company",
+  status: "status",
+  createdAt: "created_at",
 };
 
 const SELECT_COLUMNS = `
@@ -36,7 +37,7 @@ interface ContactRow {
 
 function toIso(value: string | Date): string {
   if (value instanceof Date) return value.toISOString();
-  return new Date(value.replace(' ', 'T') + 'Z').toISOString();
+  return new Date(value.replace(" ", "T") + "Z").toISOString();
 }
 
 function mapRow(row: ContactRow): Contact {
@@ -55,31 +56,47 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (ch) => `\\${ch}`);
 }
 
-export async function findAll(query: ContactListQuery): Promise<Contact[]> {
+export async function findAll(
+  query: ContactListQuery,
+): Promise<PaginatedResult<Contact>> {
   const conditions: string[] = [];
-  const params: Record<string, string> = {};
+  const params: Record<string, string | number> = {};
 
   const trimmed = query.search.trim();
   if (trimmed.length > 0) {
     conditions.push(
-      '(full_name LIKE :search OR company LIKE :search OR email LIKE :search)',
+      "(full_name LIKE :search OR company LIKE :search OR email LIKE :search)",
     );
     params.search = `%${escapeLike(trimmed)}%`;
   }
 
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   const column = SORT_COLUMN[query.sortBy];
-  const direction = query.sortDir === 'asc' ? 'ASC' : 'DESC';
+  const direction = query.sortDir === "asc" ? "ASC" : "DESC";
 
-  const sql = `
+  const countSql = `SELECT COUNT(*) AS total FROM contacts ${where}`;
+  const listSql = `
     SELECT ${SELECT_COLUMNS}
     FROM contacts
     ${where}
     ORDER BY ${column} ${direction}, id ${direction}
+    LIMIT :limit OFFSET :offset
   `;
 
-  const [rows] = await pool.query(sql, params);
-  return (rows as ContactRow[]).map(mapRow);
+  const limit = query.pageSize;
+  const offset = (query.page - 1) * query.pageSize;
+
+  const [countRows, listRows] = await Promise.all([
+    pool
+      .query(countSql, params)
+      .then(([rows]) => rows as { total: number | string }[]),
+    pool
+      .query(listSql, { ...params, limit, offset })
+      .then(([rows]) => rows as ContactRow[]),
+  ]);
+
+  const total = Number(countRows[0]?.total ?? 0);
+  return { items: listRows.map(mapRow), total };
 }
 
 export async function findById(id: number): Promise<Contact | null> {
@@ -95,7 +112,7 @@ export async function create(input: ContactInput): Promise<Contact> {
   const [result] = await pool.query(
     `INSERT INTO contacts (full_name, company, email, status)
      VALUES (:fullName, :company, :email, :status)`,
-    {...input},
+    { ...input },
   );
 
   const insertId = (result as { insertId: number }).insertId;
@@ -124,6 +141,8 @@ export async function update(
 }
 
 export async function remove(id: number): Promise<boolean> {
-  const [result] = await pool.query('DELETE FROM contacts WHERE id = :id', { id });
+  const [result] = await pool.query("DELETE FROM contacts WHERE id = :id", {
+    id,
+  });
   return (result as { affectedRows: number }).affectedRows > 0;
 }

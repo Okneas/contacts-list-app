@@ -29,4 +29,18 @@ export interface ContactListQuery {
   search: string;
   sortBy: ContactSortField;
   sortDir: SortDirection;
+  page: number;
+  pageSize: number;
+}
+
+export interface PageMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
 }

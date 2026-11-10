@@ -1,133 +1,199 @@
-import request from 'supertest';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../app';
-import * as repo from '../repository/contacts.repository';
-import type { Contact } from '../types';
+import request from "supertest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createApp } from "../app";
+import * as repo from "../repository/contacts.repository";
+import type { Contact } from "../types";
 
-vi.mock('../repository/contacts.repository');
+vi.mock("../repository/contacts.repository");
 
 const mockedRepo = vi.mocked(repo);
 const app = createApp();
 
 const sampleContact: Contact = {
   id: 1,
-  fullName: 'Иван Петров',
-  company: 'ACME',
-  email: 'ivan@acme.io',
-  status: 'active',
-  createdAt: '2026-11-10T10:00:00.000Z',
-  updatedAt: '2026-11-10T10:00:00.000Z',
+  fullName: "Иван Петров",
+  company: "ACME",
+  email: "ivan@acme.io",
+  status: "active",
+  createdAt: "2026-11-10T10:00:00.000Z",
+  updatedAt: "2026-11-10T10:00:00.000Z",
 };
 
 beforeEach(() => {
   vi.resetAllMocks();
 });
 
-describe('GET /api/contacts', () => {
-  it('400 при невалидном sortBy', async () => {
-    const res = await request(app).get('/api/contacts?sortBy=password');
+describe("GET /api/contacts", () => {
+  it("возвращает страницу и meta и передаёт query в репозиторий", async () => {
+    mockedRepo.findAll.mockResolvedValue({
+      items: [sampleContact],
+      total: 137,
+    });
+
+    const res = await request(app).get(
+      "/api/contacts?search=acme&sortBy=company&sortDir=asc&page=2&pageSize=20",
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      data: [sampleContact],
+      meta: { page: 2, pageSize: 20, total: 137, totalPages: 7 },
+    });
+    expect(mockedRepo.findAll).toHaveBeenCalledWith({
+      search: "acme",
+      sortBy: "company",
+      sortDir: "asc",
+      page: 2,
+      pageSize: 20,
+    });
+  });
+
+  it("дефолты: page=1, pageSize=20", async () => {
+    mockedRepo.findAll.mockResolvedValue({ items: [], total: 0 });
+
+    const res = await request(app).get("/api/contacts");
+
+    expect(res.status).toBe(200);
+    expect(mockedRepo.findAll).toHaveBeenCalledWith({
+      search: "",
+      sortBy: "createdAt",
+      sortDir: "desc",
+      page: 1,
+      pageSize: 20,
+    });
+    expect(res.body.meta).toEqual({
+      page: 1,
+      pageSize: 20,
+      total: 0,
+      totalPages: 0,
+    });
+  });
+
+  it("400 при pageSize > 100", async () => {
+    const res = await request(app).get("/api/contacts?pageSize=500");
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.body.error.details[0].path).toBe("pageSize");
     expect(mockedRepo.findAll).not.toHaveBeenCalled();
+  });
+
+  it("400 при page=0", async () => {
+    const res = await request(app).get("/api/contacts?page=0");
+    expect(res.status).toBe(400);
+  });
+
+  it("400 при нечисловом page", async () => {
+    const res = await request(app).get("/api/contacts?page=abc");
+    expect(res.status).toBe(400);
   });
 });
 
-describe('POST /api/contacts', () => {
-  it('201 и созданный контакт при валидном теле', async () => {
+describe("POST /api/contacts", () => {
+  it("201 и созданный контакт при валидном теле", async () => {
     mockedRepo.create.mockResolvedValue(sampleContact);
 
     const res = await request(app)
-      .post('/api/contacts')
-      .send({ fullName: '  Иван Петров  ', company: 'ACME', email: '', status: 'active' });
+      .post("/api/contacts")
+      .send({
+        fullName: "  Иван Петров  ",
+        company: "ACME",
+        email: "",
+        status: "active",
+      });
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ data: sampleContact });
     expect(mockedRepo.create).toHaveBeenCalledWith({
-      fullName: 'Иван Петров',
-      company: 'ACME',
+      fullName: "Иван Петров",
+      company: "ACME",
       email: null,
-      status: 'active',
+      status: "active",
     });
   });
 
-  it('400 со списком ошибок при пустом ФИО и плохом email', async () => {
-    const res = await request(app).post('/api/contacts').send({
-      fullName: '   ',
-      company: 'ACME',
-      email: 'not-an-email',
-      status: 'active',
+  it("400 со списком ошибок при пустом ФИО и плохом email", async () => {
+    const res = await request(app).post("/api/contacts").send({
+      fullName: "   ",
+      company: "ACME",
+      email: "not-an-email",
+      status: "active",
     });
 
     expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
     const paths = res.body.error.details.map((d: { path: string }) => d.path);
-    expect(paths).toContain('fullName');
-    expect(paths).toContain('email');
+    expect(paths).toContain("fullName");
+    expect(paths).toContain("email");
     expect(mockedRepo.create).not.toHaveBeenCalled();
   });
 });
 
-describe('GET /api/contacts/:id', () => {
-  it('200 при существующем контакте', async () => {
+describe("GET /api/contacts/:id", () => {
+  it("200 при существующем контакте", async () => {
     mockedRepo.findById.mockResolvedValue(sampleContact);
 
-    const res = await request(app).get('/api/contacts/1');
+    const res = await request(app).get("/api/contacts/1");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: sampleContact });
     expect(mockedRepo.findById).toHaveBeenCalledWith(1);
   });
 
-  it('404 при отсутствии', async () => {
+  it("404 при отсутствии", async () => {
     mockedRepo.findById.mockResolvedValue(null);
 
-    const res = await request(app).get('/api/contacts/999999');
+    const res = await request(app).get("/api/contacts/999999");
 
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe("NOT_FOUND");
   });
 });
 
-describe('PUT /api/contacts/:id', () => {
-  it('200 при успешном обновлении', async () => {
-    mockedRepo.update.mockResolvedValue({ ...sampleContact, status: 'lead' });
+describe("PUT /api/contacts/:id", () => {
+  it("200 при успешном обновлении", async () => {
+    mockedRepo.update.mockResolvedValue({ ...sampleContact, status: "lead" });
 
     const res = await request(app)
-      .put('/api/contacts/1')
-      .send({ fullName: 'Иван П.', company: 'ACME', email: null, status: 'lead' });
+      .put("/api/contacts/1")
+      .send({
+        fullName: "Иван П.",
+        company: "ACME",
+        email: null,
+        status: "lead",
+      });
 
     expect(res.status).toBe(200);
-    expect(res.body.data.status).toBe('lead');
+    expect(res.body.data.status).toBe("lead");
   });
 
-  it('404 при отсутствии', async () => {
+  it("404 при отсутствии", async () => {
     mockedRepo.update.mockResolvedValue(null);
 
     const res = await request(app)
-      .put('/api/contacts/42')
-      .send({ fullName: 'X', company: 'Y', email: null, status: 'active' });
+      .put("/api/contacts/42")
+      .send({ fullName: "X", company: "Y", email: null, status: "active" });
 
     expect(res.status).toBe(404);
   });
 });
 
-describe('DELETE /api/contacts/:id', () => {
-  it('204 при успехе', async () => {
+describe("DELETE /api/contacts/:id", () => {
+  it("204 при успехе", async () => {
     mockedRepo.remove.mockResolvedValue(true);
 
-    const res = await request(app).delete('/api/contacts/1');
+    const res = await request(app).delete("/api/contacts/1");
 
     expect(res.status).toBe(204);
-    expect(res.text).toBe('');
+    expect(res.text).toBe("");
   });
 
-  it('404 при отсутствии', async () => {
+  it("404 при отсутствии", async () => {
     mockedRepo.remove.mockResolvedValue(false);
 
-    const res = await request(app).delete('/api/contacts/42');
+    const res = await request(app).delete("/api/contacts/42");
 
     expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.body.error.code).toBe("NOT_FOUND");
   });
 });

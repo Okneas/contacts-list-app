@@ -1,9 +1,12 @@
-import './App.css'
+import { Route, Routes } from "react-router-dom"
+import ContactsTablePage from "./pages/ContactsTablePage"
 
 function App() {
 
   return (
-    <div></div>
+    <Routes>
+      <Route index element={ <ContactsTablePage /> }/>
+    </Routes>
   )
 }
 
