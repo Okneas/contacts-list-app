@@ -1,21 +1,28 @@
 import { getAllContacts } from "@/api/contacts";
 import type { ContactSortField, SortDirection } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 const useContacts = (
-  page?: number,
-  pageSize?: number,
-  search?: string,
-  sortBy?: ContactSortField,
-  sortDir?: SortDirection,
+  page = 1,
+  pageSize = 20,
+  search = "",
+  sortBy: ContactSortField = "createdAt",
+  sortDir: SortDirection = "desc",
 ) =>
   useQuery({
     queryKey: ["contacts", search, sortBy, sortDir, page, pageSize],
     queryFn: async () => {
-      const fetchContacts = await getAllContacts(search, sortBy, sortDir);
+      const fetchContacts = await getAllContacts(
+        search,
+        sortBy,
+        sortDir,
+        page,
+        pageSize,
+      );
       return fetchContacts.data;
     },
-    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
 
 export default useContacts;

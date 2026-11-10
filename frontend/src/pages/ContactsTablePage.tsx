@@ -1,17 +1,56 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Search } from "lucide-react";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
+import { useDebounce } from "@/hooks/useDebounce";
 import useContacts from "@/hooks/useContacts";
 import Table from "@/components/Table/Table";
+import Pagination from "@/components/Pagination/Pagination";
 import ConfirmDialog from "@/components/ConfirmDialog/ConfirmDialog";
-import type { Contact } from "@/types";
-import { Search } from "lucide-react";
+import type { Contact, ContactSortField, SortDirection } from "@/types";
 import styles from "./ContactsTablePage.module.scss";
 
+const PAGE_SIZE = 10;
+
 const ContactsTablePage = () => {
-  const { data: contacts, isLoading } = useContacts();
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<ContactSortField>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [page, setPage] = useState(1);
+
+  const debouncedSearch = useDebounce(search, 300);
+
+  const { data: contacts, isLoading } = useContacts(
+    page,
+    PAGE_SIZE,
+    debouncedSearch,
+    sortBy,
+    sortDir,
+  );
   const remove = useDeleteContact();
 
   const [pendingDelete, setPendingDelete] = useState<Contact | null>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    tableScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page, debouncedSearch, sortBy, sortDir]);
+
+  const totalPages = contacts?.meta.totalPages ?? 1;
+
+  const handleSort = (field: ContactSortField) => {
+    setPage(1);
+    if (field === sortBy) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortDir("asc");
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
 
   const handleDelete = (id: number) => {
     const contact = contacts?.data.find((c) => c.id === id) ?? null;
@@ -20,31 +59,54 @@ const ContactsTablePage = () => {
 
   const handleConfirmDelete = () => {
     if (!pendingDelete) return;
+    const shouldGoBack = contacts?.data.length === 1 && page > 1;
+
     remove.mutate(pendingDelete.id, {
-      onSuccess: () => setPendingDelete(null),
+      onSuccess: () => {
+        setPendingDelete(null);
+        if (shouldGoBack) setPage(page - 1);
+      },
     });
   };
 
   return (
     <div className="page">
-      <div
-        className="paper container"
-        style={{ width: "70vw", height: "70vh" }}
-      >
+      <div className={`paper container ${styles.paper}`}>
         <div className={styles.paper_table_header}>
           <h2>Мои контакты</h2>
           <div className={styles.search_wrapper}>
             <Search size={24} />
             <div className={`field ${styles.search_input_container}`}>
-              <input className="input" placeholder="Поиск..." />
+              <input
+                className="input"
+                placeholder="Поиск..."
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
             </div>
           </div>
         </div>
+
         <div className="divider" />
-        <Table
-          isLoading={isLoading}
-          data={contacts?.data}
-          onDelete={handleDelete}
+
+        <div
+          className={`${styles.table_scroll} scrollbar`}
+          ref={tableScrollRef}
+        >
+          <Table
+            isLoading={isLoading}
+            data={contacts?.data}
+            onDelete={handleDelete}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSort={handleSort}
+          />
+        </div>
+
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onChange={setPage}
         />
       </div>
 

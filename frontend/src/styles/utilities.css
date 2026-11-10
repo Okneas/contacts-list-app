@@ -75,7 +75,9 @@
 }
 
 .page {
-  width: 100vw;
+  width: 100%;
+  padding-bottom: 3rem;
+  padding-top: 3rem;
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -91,4 +93,30 @@
 
 .icon-spin {
   animation: spin 1s linear infinite;
+}
+
+.scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--c-neutral-400);
+  background-clip: padding-box;
 }
