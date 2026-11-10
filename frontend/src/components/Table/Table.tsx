@@ -1,4 +1,4 @@
-import type { Contact } from "@/types";
+import type { Contact, ContactSortField, SortDirection } from "@/types";
 import type { ComponentProps } from "react";
 import dayjs from "dayjs";
 import { Trash2 } from "lucide-react";
@@ -9,31 +9,46 @@ interface Props {
   data?: Contact[];
   isLoading: boolean;
   onDelete: (id: number) => void;
+  sortBy: ContactSortField;
+  sortDir: SortDirection;
+  onSort: (field: ContactSortField) => void;
 }
 
 const Table = ({
   data,
   isLoading,
   onDelete,
+  sortBy,
+  sortDir,
+  onSort,
   ...props
 }: ComponentProps<"table"> & Props) => {
-  const nav = useNavigate()
+  const nav = useNavigate();
+  const ariaSort = (field: ContactSortField) =>
+    sortBy === field
+      ? sortDir === "asc"
+        ? "ascending"
+        : "descending"
+      : "none";
+
+  const sortButton = (field: ContactSortField, label: string) => (
+    <button
+      type="button"
+      className="table__sort"
+      aria-sort={ariaSort(field)}
+      onClick={() => onSort(field)}
+    >
+      {label}
+    </button>
+  );
   return (
     <table {...props} className="table">
       <thead>
         <tr>
-          <th>
-            <button className="table__sort">ФИО</button>
-          </th>
-          <th>
-            <button className="table__sort">Компания</button>
-          </th>
-          <th>
-            <button className="table__sort">Статус</button>
-          </th>
-          <th>
-            <button className="table__sort">Дата создания</button>
-          </th>
+          <th>{sortButton("fullName", "ФИО")}</th>
+          <th>{sortButton("company", "Компания")}</th>
+          <th>{sortButton("status", "Статус")}</th>
+          <th>{sortButton("createdAt", "Дата создания")}</th>
           <th style={{ width: "72px" }} />
         </tr>
       </thead>
@@ -74,7 +89,11 @@ const Table = ({
         <tbody>
           {data.map((contact) => {
             return (
-              <tr key={"contact-" + contact.id} style={{ cursor: "pointer" }} onClick={() => nav(`/contact/${contact.id}`)}>
+              <tr
+                key={"contact-" + contact.id}
+                style={{ cursor: "pointer" }}
+                onClick={() => nav(`/contact/${contact.id}`)}
+              >
                 <td style={{ fontWeight: "600" }}>{contact.fullName}</td>
                 <td
                   style={{ color: "var(--color-primary)", fontWeight: "600" }}

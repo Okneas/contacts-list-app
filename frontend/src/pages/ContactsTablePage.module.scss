@@ -15,3 +15,16 @@
 .search_input_container {
     flex: 1
 }
+
+.paper {
+  width: 70vw;
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.table_scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
