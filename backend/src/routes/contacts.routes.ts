@@ -1,71 +1,240 @@
-import { Router } from "express";
-import { notFound } from "../error";
-import { asyncHandler } from "../middleware/asyncHandler";
-import * as repo from "../repository/contacts.repository";
+import { Router } from 'express';
+import { notFound } from '../error';
+import { asyncHandler } from '../middleware/asyncHandler';
+import { validate, validated } from '../middleware/validate';
+import * as repo from '../repository/contacts.repository';
 import {
   createContactSchema,
   idParamSchema,
   listQuerySchema,
   updateContactSchema,
-} from "../validation/contact";
-import { validate, validated } from "../middleware/validate";
+} from '../validation/contact';
 
 export const contactsRouter = Router();
 
-// GET /api/contacts?search=&sortBy=&sortDir=
+/**
+ * @openapi
+ * /api/contacts:
+ *   get:
+ *     tags: [Contacts]
+ *     summary: Список контактов с поиском, сортировкой и пагинацией
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           maxLength: 255
+ *           default: ''
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [fullName, company, status, createdAt]
+ *           default: createdAt
+ *       - in: query
+ *         name: sortDir
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Страница списка контактов
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Contact'
+ *                 meta:
+ *                   $ref: '#/components/schemas/PageMeta'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ */
 contactsRouter.get(
-  "/",
-  validate("query", listQuerySchema),
+  '/',
+  validate('query', listQuerySchema),
   asyncHandler(async (req, res) => {
-    const query = validated(req, "query", listQuerySchema);
-    const list = await repo.findAll(query);
-    res.json({ data: list });
+    const query = validated(req, 'query', listQuerySchema);
+    const { items, total } = await repo.findAll(query);
+
+    const totalPages = total === 0 ? 0 : Math.ceil(total / query.pageSize);
+
+    res.json({
+      data: items,
+      meta: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages,
+      },
+    });
   }),
 );
 
-// GET /api/contacts/:id
+/**
+ * @openapi
+ * /api/contacts/{id}:
+ *   get:
+ *     tags: [Contacts]
+ *     summary: Получить контакт по id
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *     responses:
+ *       200:
+ *         description: OK
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/Contact'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 contactsRouter.get(
-  "/:id",
-  validate("params", idParamSchema),
+  '/:id',
+  validate('params', idParamSchema),
   asyncHandler(async (req, res) => {
-    const { id } = validated(req, "params", idParamSchema);
+    const { id } = validated(req, 'params', idParamSchema);
     const contact = await repo.findById(id);
     if (!contact) throw notFound();
     res.json({ data: contact });
   }),
 );
 
-// POST /api/contacts
+/**
+ * @openapi
+ * /api/contacts:
+ *   post:
+ *     tags: [Contacts]
+ *     summary: Создать контакт
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ContactInput'
+ *     responses:
+ *       201:
+ *         description: Создано
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/Contact'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ */
 contactsRouter.post(
-  "/",
-  validate("body", createContactSchema),
+  '/',
+  validate('body', createContactSchema),
   asyncHandler(async (req, res) => {
-    const input = validated(req, "body", createContactSchema);
+    const input = validated(req, 'body', createContactSchema);
     const created = await repo.create(input);
     res.status(201).json({ data: created });
   }),
 );
 
-// PUT /api/contacts/:id
+/**
+ * @openapi
+ * /api/contacts/{id}:
+ *   put:
+ *     tags: [Contacts]
+ *     summary: Полностью обновить контакт
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ContactInput'
+ *     responses:
+ *       200:
+ *         description: Обновлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   $ref: '#/components/schemas/Contact'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 contactsRouter.put(
-  "/:id",
-  validate("params", idParamSchema),
-  validate("body", updateContactSchema),
+  '/:id',
+  validate('params', idParamSchema),
+  validate('body', updateContactSchema),
   asyncHandler(async (req, res) => {
-    const { id } = validated(req, "params", idParamSchema);
-    const input = validated(req, "body", updateContactSchema);
+    const { id } = validated(req, 'params', idParamSchema);
+    const input = validated(req, 'body', updateContactSchema);
     const updated = await repo.update(id, input);
     if (!updated) throw notFound();
     res.json({ data: updated });
   }),
 );
 
-// DELETE /api/contacts/:id
+/**
+ * @openapi
+ * /api/contacts/{id}:
+ *   delete:
+ *     tags: [Contacts]
+ *     summary: Удалить контакт
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *     responses:
+ *       204:
+ *         description: Удалено, тело ответа пустое
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 contactsRouter.delete(
-  "/:id",
-  validate("params", idParamSchema),
+  '/:id',
+  validate('params', idParamSchema),
   asyncHandler(async (req, res) => {
-    const { id } = validated(req, "params", idParamSchema);
+    const { id } = validated(req, 'params', idParamSchema);
     const removed = await repo.remove(id);
     if (!removed) throw notFound();
     res.status(204).end();

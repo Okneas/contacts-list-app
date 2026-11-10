@@ -36,11 +36,15 @@ export const listQuerySchema = z
     search: z.string().trim().max(255).optional().default(''),
     sortBy: z.enum(CONTACT_SORT_FIELDS).optional().default('createdAt'),
     sortDir: z.enum(['asc', 'desc']).optional().default('desc'),
+    page: z.coerce.number().int().min(1).optional().default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
   })
   .transform((v) => ({
     search: v.search,
     sortBy: v.sortBy,
     sortDir: v.sortDir,
+    page: v.page,
+    pageSize: v.pageSize,
   }));
 
 
