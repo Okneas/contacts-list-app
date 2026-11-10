@@ -1,4 +1,5 @@
 import type {
+  Contact,
   ContactSortField,
   ContactsResponse,
   SortDirection,
@@ -13,3 +14,7 @@ export const getAllContacts = (
   instance.get<ContactsResponse>("/contacts", {
     params: { search, sortBy, sortDir },
   });
+
+export const deleteContact = (id: number) => instance.delete(`/contacts/${id}`);
+
+export const getContact = (id: number) => instance.get<{ data: Contact }>(`/contacts/${id}`)

@@ -1,18 +1,23 @@
 import type { Contact } from "@/types";
 import type { ComponentProps } from "react";
 import dayjs from "dayjs";
-import Status from "./Status";
+import { Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import Status from "./Status/Status";
 
 interface Props {
   data?: Contact[];
   isLoading: boolean;
+  onDelete: (id: number) => void;
 }
 
 const Table = ({
   data,
   isLoading,
+  onDelete,
   ...props
 }: ComponentProps<"table"> & Props) => {
+  const nav = useNavigate()
   return (
     <table {...props} className="table">
       <thead>
@@ -29,6 +34,7 @@ const Table = ({
           <th>
             <button className="table__sort">Дата создания</button>
           </th>
+          <th style={{ width: "72px" }} />
         </tr>
       </thead>
       {isLoading || !data ? (
@@ -68,7 +74,7 @@ const Table = ({
         <tbody>
           {data.map((contact) => {
             return (
-              <tr key={"contact-" + contact.id}>
+              <tr key={"contact-" + contact.id} style={{ cursor: "pointer" }} onClick={() => nav(`/contact/${contact.id}`)}>
                 <td style={{ fontWeight: "600" }}>{contact.fullName}</td>
                 <td
                   style={{ color: "var(--color-primary)", fontWeight: "600" }}
@@ -78,7 +84,21 @@ const Table = ({
                 <td>
                   <Status status={contact.status} />
                 </td>
-                <td style={{ fontWeight: "600" }}>{dayjs(contact.createdAt).format("DD.MM.YYYY HH:mm")}</td>
+                <td style={{ fontWeight: "600" }}>
+                  {dayjs(contact.createdAt).format("DD.MM.YYYY HH:mm")}
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  <button
+                    className="btn btn--icon btn--danger-ghost"
+                    aria-label={`Удалить контакт ${contact.fullName}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(contact.id);
+                    }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
               </tr>
             );
           })}
