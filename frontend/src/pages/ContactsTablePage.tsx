@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { useDeleteContact } from "@/hooks/useDeleteContact";
 import { useDebounce } from "@/hooks/useDebounce";
 import Table from "@/components/Table/Table";
@@ -13,6 +13,7 @@ import type {
 } from "@/types";
 import styles from "./ContactsTablePage.module.scss";
 import { useContacts } from "@/hooks/useContacts";
+import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 10;
 
@@ -34,6 +35,7 @@ const ContactsTablePage = () => {
     statusFilter,
   );
   const remove = useDeleteContact();
+  const navigate = useNavigate();
 
   const [pendingDelete, setPendingDelete] = useState<Contact | null>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
@@ -86,16 +88,26 @@ const ContactsTablePage = () => {
       <div className={`paper container ${styles.paper}`}>
         <div className={styles.paper_table_header}>
           <h2>Мои контакты</h2>
-          <div className={styles.search_wrapper}>
-            <Search size={24} />
-            <div className={`field ${styles.search_input_container}`}>
-              <input
-                className="input"
-                placeholder="Поиск..."
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-              />
+          <div className={styles.header_actions}>
+            <div className={styles.search_wrapper}>
+              <Search size={24} />
+              <div className={`field ${styles.search_input_container}`}>
+                <input
+                  className="input"
+                  placeholder="Поиск..."
+                  value={search}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                />
+              </div>
             </div>
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => navigate("/contact/new")}
+            >
+              <Plus size={16} />
+              Создать
+            </button>
           </div>
         </div>
 

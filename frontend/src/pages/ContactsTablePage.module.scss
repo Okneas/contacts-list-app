@@ -28,3 +28,20 @@
   overflow-y: auto;
   min-height: 0;
 }
+
+.header_actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.header_actions :global(.btn) {
+  min-height: 40px;
+}
+
+.search_wrapper {
+  display: flex;
+  gap: var(--space-3);
+  width: 280px;
+  align-items: center;
+}
